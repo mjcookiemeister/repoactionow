@@ -1,0 +1,92 @@
+{
+	"name": "LegoInput",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "DataLakeStorageLinkedService",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "gistfile1.txt",
+				"fileSystem": "landing-zone"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "SetID",
+				"type": "String"
+			},
+			{
+				"name": "Number",
+				"type": "String"
+			},
+			{
+				"name": "Variant",
+				"type": "String"
+			},
+			{
+				"name": "Theme",
+				"type": "String"
+			},
+			{
+				"name": "SubTheme",
+				"type": "String"
+			},
+			{
+				"name": "Year",
+				"type": "String"
+			},
+			{
+				"name": "SetName",
+				"type": "String"
+			},
+			{
+				"name": "Minifigs",
+				"type": "String"
+			},
+			{
+				"name": "Pieces",
+				"type": "String"
+			},
+			{
+				"name": "UKPrice",
+				"type": "String"
+			},
+			{
+				"name": "USPrice",
+				"type": "String"
+			},
+			{
+				"name": "CAPrice",
+				"type": "String"
+			},
+			{
+				"name": "Image",
+				"type": "String"
+			},
+			{
+				"name": "ImageFilename",
+				"type": "String"
+			},
+			{
+				"name": "InstructionsAvailable",
+				"type": "String"
+			},
+			{
+				"name": "EAN",
+				"type": "String"
+			},
+			{
+				"name": "UPC",
+				"type": "String"
+			}
+		]
+	}
+}
