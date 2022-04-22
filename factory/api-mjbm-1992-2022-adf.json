@@ -1,0 +1,9 @@
+{
+	"name": "api-mjbm-1992-2022-adf",
+	"location": "westeurope",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "07d4453a-4db7-42c2-9b47-821ff6bd4ac4",
+		"tenantId": "ae7e50a2-ed26-41f7-bd75-f49683f2433a"
+	}
+}
