@@ -10,7 +10,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"folderPath": "FileNameColumn",
+				"folderPath": "datalogic/ExtraField",
 				"fileSystem": "landing-zone"
 			},
 			"columnDelimiter": ",",
