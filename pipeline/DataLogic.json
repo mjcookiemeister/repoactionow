@@ -1,5 +1,5 @@
 {
-	"name": "AddFileName",
+	"name": "DataLogic",
 	"properties": {
 		"activities": [
 			{
@@ -134,7 +134,7 @@
 							],
 							"outputs": [
 								{
-									"referenceName": "FileNameFolder",
+									"referenceName": "ExtraFieldFolder",
 									"type": "DatasetReference"
 								}
 							]
