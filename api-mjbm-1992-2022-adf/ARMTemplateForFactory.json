@@ -1,0 +1,1153 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "api-mjbm-1992-2022-adf"
+		},
+		"DataLakeStorageLinkedService_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'DataLakeStorageLinkedService'"
+		},
+		"DataLakeStorageLinkedService_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://itsrainingforthewin1992.dfs.core.windows.net"
+		},
+		"DataLogic_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/aa723608-e2eb-41e0-913a-8003f707f10d/resourceGroups/api_mjbm_1992_2022/providers/Microsoft.Storage/storageAccounts/itsrainingforthewin1992"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/DataLogic')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "getMetaData",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DataLogic",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "FilterCSV",
+						"type": "Filter",
+						"dependsOn": [
+							{
+								"activity": "getMetaData",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('getMetaData').output.childItems",
+								"type": "Expression"
+							},
+							"condition": {
+								"value": "@contains(item().name, '.csv')",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "ForEach",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "FilterCSV",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('FilterCSV').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "CopyExtraField",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"additionalColumns": [
+												{
+													"name": "FileName",
+													"value": {
+														"value": "@item().name",
+														"type": "Expression"
+													}
+												}
+											],
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"wildcardFolderPath": "datalogic",
+												"wildcardFileName": {
+													"value": "@item().name",
+													"type": "Expression"
+												},
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "LandingZone",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ExtraFieldFolder",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DataLogic')]",
+				"[concat(variables('factoryId'), '/datasets/LandingZone')]",
+				"[concat(variables('factoryId'), '/datasets/ExtraFieldFolder')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataLogic')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "DataLakeStorageLinkedService",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "datalogic",
+						"fileSystem": "landing-zone"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/DataLakeStorageLinkedService')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ExtraFieldFolder')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "DataLakeStorageLinkedService",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "datalogic/ExtraField",
+						"fileSystem": "landing-zone"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/DataLakeStorageLinkedService')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LandingZone')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "DataLakeStorageLinkedService",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "landing-zone"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/DataLakeStorageLinkedService')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LegoInput')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "DataLakeStorageLinkedService",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "gistfile1.txt",
+						"fileSystem": "landing-zone"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "SetID",
+						"type": "String"
+					},
+					{
+						"name": "Number",
+						"type": "String"
+					},
+					{
+						"name": "Variant",
+						"type": "String"
+					},
+					{
+						"name": "Theme",
+						"type": "String"
+					},
+					{
+						"name": "SubTheme",
+						"type": "String"
+					},
+					{
+						"name": "Year",
+						"type": "String"
+					},
+					{
+						"name": "SetName",
+						"type": "String"
+					},
+					{
+						"name": "Minifigs",
+						"type": "String"
+					},
+					{
+						"name": "Pieces",
+						"type": "String"
+					},
+					{
+						"name": "UKPrice",
+						"type": "String"
+					},
+					{
+						"name": "USPrice",
+						"type": "String"
+					},
+					{
+						"name": "CAPrice",
+						"type": "String"
+					},
+					{
+						"name": "Image",
+						"type": "String"
+					},
+					{
+						"name": "ImageFilename",
+						"type": "String"
+					},
+					{
+						"name": "InstructionsAvailable",
+						"type": "String"
+					},
+					{
+						"name": "EAN",
+						"type": "String"
+					},
+					{
+						"name": "UPC",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/DataLakeStorageLinkedService')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataLakeStorageLinkedService')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('DataLakeStorageLinkedService_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('DataLakeStorageLinkedService_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataLogic')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "DataLogic",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/landing-zone/blobs/datalogic/",
+					"blobPathEndsWith": "datalogic.csv",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('DataLogic_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/DataLogic')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LegoFlow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "LegoInput",
+								"type": "DatasetReference"
+							},
+							"name": "LegoInput"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "LandingZone",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						},
+						{
+							"dataset": {
+								"referenceName": "LandingZone",
+								"type": "DatasetReference"
+							},
+							"name": "sink2"
+						},
+						{
+							"dataset": {
+								"referenceName": "LandingZone",
+								"type": "DatasetReference"
+							},
+							"name": "sink3"
+						},
+						{
+							"dataset": {
+								"referenceName": "LandingZone",
+								"type": "DatasetReference"
+							},
+							"name": "sink4"
+						},
+						{
+							"dataset": {
+								"referenceName": "LandingZone",
+								"type": "DatasetReference"
+							},
+							"name": "sink5"
+						},
+						{
+							"dataset": {
+								"referenceName": "LandingZone",
+								"type": "DatasetReference"
+							},
+							"name": "sink6"
+						},
+						{
+							"dataset": {
+								"referenceName": "LandingZone",
+								"type": "DatasetReference"
+							},
+							"name": "sink7"
+						},
+						{
+							"dataset": {
+								"referenceName": "LandingZone",
+								"type": "DatasetReference"
+							},
+							"name": "sink8"
+						},
+						{
+							"dataset": {
+								"referenceName": "LandingZone",
+								"type": "DatasetReference"
+							},
+							"name": "sink9"
+						}
+					],
+					"transformations": [
+						{
+							"name": "split1"
+						},
+						{
+							"name": "SelectFields2"
+						},
+						{
+							"name": "SelectFields1"
+						},
+						{
+							"name": "split2"
+						},
+						{
+							"name": "SelectFields3"
+						},
+						{
+							"name": "SelectFields4"
+						},
+						{
+							"name": "ToInteger"
+						},
+						{
+							"name": "AggPrice"
+						},
+						{
+							"name": "split3"
+						},
+						{
+							"name": "ImgNoGearPrice"
+						},
+						{
+							"name": "split4"
+						},
+						{
+							"name": "SelectFields5"
+						},
+						{
+							"name": "SelectFields6"
+						},
+						{
+							"name": "split5"
+						},
+						{
+							"name": "split6"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "select2"
+						},
+						{
+							"name": "select3"
+						},
+						{
+							"name": "select4"
+						},
+						{
+							"name": "select5"
+						},
+						{
+							"name": "select6"
+						},
+						{
+							"name": "select7"
+						},
+						{
+							"name": "select8"
+						},
+						{
+							"name": "AllPricesPerItem"
+						},
+						{
+							"name": "UKPriceItems"
+						},
+						{
+							"name": "USPriceItems"
+						},
+						{
+							"name": "CAPriceItems"
+						},
+						{
+							"name": "PriceNotNull1"
+						},
+						{
+							"name": "PriceNotNull2"
+						},
+						{
+							"name": "PriceNotNull3"
+						},
+						{
+							"name": "toInteger3"
+						},
+						{
+							"name": "toInteger2"
+						},
+						{
+							"name": "toInteger1"
+						},
+						{
+							"name": "AggCAPrices"
+						},
+						{
+							"name": "AggUSPrices"
+						},
+						{
+							"name": "AggUKPrices"
+						},
+						{
+							"name": "union1"
+						},
+						{
+							"name": "join1"
+						},
+						{
+							"name": "select9"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          SetID as string,",
+						"          Number as string,",
+						"          Variant as string,",
+						"          Theme as string,",
+						"          SubTheme as string,",
+						"          Year as string,",
+						"          SetName as string,",
+						"          Minifigs as string,",
+						"          Pieces as string,",
+						"          UKPrice as string,",
+						"          USPrice as string,",
+						"          CAPrice as string,",
+						"          Image as string,",
+						"          ImageFilename as string,",
+						"          InstructionsAvailable as string,",
+						"          EAN as string,",
+						"          UPC as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> LegoInput",
+						"LegoInput split(Image == 'True',",
+						"     disjoint: false) ~> split1@(Image, Object)",
+						"split1@Object select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SelectFields2",
+						"split1@Image select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          ImageFilename,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SelectFields1",
+						"SelectFields1 split(Theme=='Gear',",
+						"     disjoint: false) ~> split2@(ImageGear, ImageNoGear)",
+						"split2@ImageGear select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          ImageFilename,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SelectFields3",
+						"split2@ImageNoGear select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          ImageFilename,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SelectFields4",
+						"AllPricesPerItem derive(AggColumn = toInteger(1),",
+						"          UKPrice = toDecimal(UKPrice),",
+						"          USPrice = toDecimal(USPrice),",
+						"          CAPrice = toDecimal(CAPrice)) ~> ToInteger",
+						"ToInteger aggregate(groupBy(AggColumn),",
+						"     TotalUKPrice = sum(UKPrice),",
+						"          AvgUKPrice = avg(UKPrice),",
+						"          MaxUKPrice = max(UKPrice),",
+						"          MinUKPrice = min(UKPrice),",
+						"          TotalUSPrice = sum(USPrice),",
+						"          AvgUSPrice = avg(USPrice),",
+						"          MaxUSPrice = max(USPrice),",
+						"          MinUSPrice = min(USPrice),",
+						"          TotalCAPrice = sum(CAPrice),",
+						"          AvgCAPrice = avg(CAPrice),",
+						"          MaxCAPrice = max(CAPrice),",
+						"          MinCAPrice = min(CAPrice)) ~> AggPrice",
+						"SelectFields3 split(not(isNull(UKPrice)) || not(isNull(USPrice)) || not(isNull(CAPrice)),",
+						"     disjoint: false) ~> split3@(ImgGearPrice, ImgGearNoPrice)",
+						"SelectFields4 split(not(isNull(UKPrice)) || not(isNull(USPrice)) || not(isNull(CAPrice)),",
+						"     disjoint: false) ~> ImgNoGearPrice@(ImgNoGearPrice, ImgNoGearNoPrice)",
+						"SelectFields2 split(Theme=='Gear',",
+						"     disjoint: false) ~> split4@(ObjectGear, ObjectNoGear)",
+						"split4@ObjectGear select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SelectFields5",
+						"split4@ObjectNoGear select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SelectFields6",
+						"SelectFields5 split(not(isNull(UKPrice)) || not(isNull(USPrice)) || not(isNull(CAPrice)),",
+						"     disjoint: false) ~> split5@(ObjGearPrice, ObjGearNoPrice)",
+						"SelectFields6 split(not(isNull(UKPrice)) || not(isNull(USPrice)) || not(isNull(CAPrice)),",
+						"     disjoint: false) ~> split6@(ObjNoGearPrice, ObjNoGearNoPrice)",
+						"split3@ImgGearPrice select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          ImageFilename,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"split3@ImgGearNoPrice select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          ImageFilename,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"ImgNoGearPrice@ImgNoGearPrice select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          ImageFilename,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select3",
+						"ImgNoGearPrice@ImgNoGearNoPrice select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          ImageFilename,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select4",
+						"split5@ObjGearPrice select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select5",
+						"split5@ObjGearNoPrice select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select6",
+						"split6@ObjNoGearPrice select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select7",
+						"split6@ObjNoGearNoPrice select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          USPrice,",
+						"          CAPrice,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select8",
+						"LegoInput filter(UKPrice!='0' && USPrice!='0' && CAPrice!='0') ~> AllPricesPerItem",
+						"LegoInput select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          UKPrice,",
+						"          Image,",
+						"          ImageFilename,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> UKPriceItems",
+						"LegoInput select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          USPrice,",
+						"          Image,",
+						"          ImageFilename,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> USPriceItems",
+						"LegoInput select(mapColumn(",
+						"          SetID,",
+						"          Number,",
+						"          Variant,",
+						"          Theme,",
+						"          SubTheme,",
+						"          Year,",
+						"          SetName,",
+						"          Minifigs,",
+						"          Pieces,",
+						"          CAPrice,",
+						"          Image,",
+						"          ImageFilename,",
+						"          InstructionsAvailable,",
+						"          EAN,",
+						"          UPC",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> CAPriceItems",
+						"UKPriceItems filter(not(isNull(UKPrice)) && trim(UKPrice)!='0') ~> PriceNotNull1",
+						"USPriceItems filter(not(isNull(USPrice)) && trim(USPrice)!='0') ~> PriceNotNull2",
+						"CAPriceItems filter(not(isNull(CAPrice)) && trim(CAPrice)!='0') ~> PriceNotNull3",
+						"PriceNotNull3 derive(CAPrice = toDecimal(CAPrice),",
+						"          AggColumn = toInteger(1),",
+						"          Country = 'Canada') ~> toInteger3",
+						"PriceNotNull2 derive(USPrice = toDecimal(USPrice),",
+						"          AggColumn = toInteger(1),",
+						"          Country = 'USA') ~> toInteger2",
+						"PriceNotNull1 derive(UKPrice = toDecimal(UKPrice),",
+						"          AggColumn = toInteger(1),",
+						"          Country = 'United Kingdom') ~> toInteger1",
+						"toInteger3 aggregate(groupBy(AggColumn),",
+						"     Total = sum(CAPrice),",
+						"          Average = avg(CAPrice),",
+						"          MaxValue = max(CAPrice),",
+						"          MinValue = min(CAPrice),",
+						"          Country = last(Country)) ~> AggCAPrices",
+						"toInteger2 aggregate(groupBy(AggColumn),",
+						"     Total = sum(USPrice),",
+						"          Average = avg(USPrice),",
+						"          MaxValue = max(USPrice),",
+						"          MinValue = min(USPrice),",
+						"          Country = last(Country)) ~> AggUSPrices",
+						"toInteger1 aggregate(groupBy(AggColumn),",
+						"     Total = sum(UKPrice),",
+						"          Average = avg(UKPrice),",
+						"          MaxValue = max(UKPrice),",
+						"          MinValue = min(UKPrice),",
+						"          Country = last(Country)) ~> AggUKPrices",
+						"AggCAPrices, AggUSPrices, AggUKPrices union(byName: true)~> union1",
+						"union1, AggPrice join(union1@AggColumn == AggPrice@AggColumn,",
+						"     joinType:'outer',",
+						"     broadcast: 'auto')~> join1",
+						"join1 select(mapColumn(",
+						"          Total,",
+						"          Average,",
+						"          MaxValue,",
+						"          MinValue,",
+						"          Country,",
+						"          TotalUKPrice,",
+						"          AvgUKPrice,",
+						"          MaxUKPrice,",
+						"          MinUKPrice,",
+						"          TotalUSPrice,",
+						"          AvgUSPrice,",
+						"          MaxUSPrice,",
+						"          MinUSPrice,",
+						"          TotalCAPrice,",
+						"          AvgCAPrice,",
+						"          MaxCAPrice,",
+						"          MinCAPrice",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select9",
+						"select9 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:[('LegoPrices.csv')],",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1",
+						"select1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:[('ImgGearPrice.csv')],",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink2",
+						"select2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:[('ImgGearNoPrice.csv')],",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink3",
+						"select3 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:[('ImgNoGearPrice.csv')],",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink4",
+						"select4 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:[('ImgNoGearNoPrice.csv')],",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink5",
+						"select5 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:[('ObjGearPrice.csv')],",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink6",
+						"select6 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:[('ObjGearNoPrice.csv')],",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink7",
+						"select7 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:[('ObjNoGearPrice.csv')],",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink8",
+						"select8 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:[('ObjNoGearNoPrice.csv')],",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink9"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/LegoInput')]",
+				"[concat(variables('factoryId'), '/datasets/LandingZone')]"
+			]
+		}
+	]
+}

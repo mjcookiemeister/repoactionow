@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "api-mjbm-1992-2022-adf"
+		},
+		"DataLakeStorageLinkedService_accountKey": {
+			"value": ""
+		},
+		"DataLakeStorageLinkedService_properties_typeProperties_url": {
+			"value": "https://itsrainingforthewin1992.dfs.core.windows.net"
+		},
+		"DataLogic_properties_typeProperties_scope": {
+			"value": "/subscriptions/aa723608-e2eb-41e0-913a-8003f707f10d/resourceGroups/api_mjbm_1992_2022/providers/Microsoft.Storage/storageAccounts/itsrainingforthewin1992"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
