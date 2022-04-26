@@ -127,6 +127,9 @@
 				},
 				{
 					"name": "join1"
+				},
+				{
+					"name": "select9"
 				}
 			],
 			"scriptLines": [
@@ -547,7 +550,28 @@
 				"AggCAPrices, AggUSPrices, AggUKPrices union(byName: true)~> union1",
 				"union1, AggPrice join(union1@AggColumn == AggPrice@AggColumn,",
 				"     joinType:'outer',",
-				"     broadcast: 'auto')~> join1"
+				"     broadcast: 'auto')~> join1",
+				"join1 select(mapColumn(",
+				"          Total,",
+				"          Average,",
+				"          MaxValue,",
+				"          MinValue,",
+				"          Country,",
+				"          TotalUKPrice,",
+				"          AvgUKPrice,",
+				"          MaxUKPrice,",
+				"          MinUKPrice,",
+				"          TotalUSPrice,",
+				"          AvgUSPrice,",
+				"          MaxUSPrice,",
+				"          MinUSPrice,",
+				"          TotalCAPrice,",
+				"          AvgCAPrice,",
+				"          MaxCAPrice,",
+				"          MinCAPrice",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select9"
 			]
 		}
 	}
