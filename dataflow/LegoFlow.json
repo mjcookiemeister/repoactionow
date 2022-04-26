@@ -124,6 +124,9 @@
 				},
 				{
 					"name": "union1"
+				},
+				{
+					"name": "join1"
 				}
 			],
 			"scriptLines": [
@@ -541,7 +544,10 @@
 				"          MaxValue = max(UKPrice),",
 				"          MinValue = min(UKPrice),",
 				"          Country = last(Country)) ~> AggUKPrices",
-				"AggCAPrices, AggUSPrices, AggUKPrices union(byName: true)~> union1"
+				"AggCAPrices, AggUSPrices, AggUKPrices union(byName: true)~> union1",
+				"union1, AggPrice join(union1@AggColumn == AggPrice@AggColumn,",
+				"     joinType:'outer',",
+				"     broadcast: 'auto')~> join1"
 			]
 		}
 	}
