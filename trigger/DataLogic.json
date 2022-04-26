@@ -1,0 +1,25 @@
+{
+	"name": "DataLogic",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "DataLogic",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/landing-zone/blobs/datalogic/",
+			"blobPathEndsWith": "datalogic.csv",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/aa723608-e2eb-41e0-913a-8003f707f10d/resourceGroups/api_mjbm_1992_2022/providers/Microsoft.Storage/storageAccounts/itsrainingforthewin1992",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}
