@@ -1,5 +1,5 @@
 {
-	"name": "FileNameFolder",
+	"name": "ExtraFieldFolder",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "DataLakeStorageLinkedService",
