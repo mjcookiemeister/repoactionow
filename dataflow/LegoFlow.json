@@ -15,63 +15,63 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "DelimitedText1",
+						"referenceName": "LandingZone",
 						"type": "DatasetReference"
 					},
 					"name": "sink1"
 				},
 				{
 					"dataset": {
-						"referenceName": "DelimitedText1",
+						"referenceName": "LandingZone",
 						"type": "DatasetReference"
 					},
 					"name": "sink2"
 				},
 				{
 					"dataset": {
-						"referenceName": "DelimitedText1",
+						"referenceName": "LandingZone",
 						"type": "DatasetReference"
 					},
 					"name": "sink3"
 				},
 				{
 					"dataset": {
-						"referenceName": "DelimitedText1",
+						"referenceName": "LandingZone",
 						"type": "DatasetReference"
 					},
 					"name": "sink4"
 				},
 				{
 					"dataset": {
-						"referenceName": "DelimitedText1",
+						"referenceName": "LandingZone",
 						"type": "DatasetReference"
 					},
 					"name": "sink5"
 				},
 				{
 					"dataset": {
-						"referenceName": "DelimitedText1",
+						"referenceName": "LandingZone",
 						"type": "DatasetReference"
 					},
 					"name": "sink6"
 				},
 				{
 					"dataset": {
-						"referenceName": "DelimitedText1",
+						"referenceName": "LandingZone",
 						"type": "DatasetReference"
 					},
 					"name": "sink7"
 				},
 				{
 					"dataset": {
-						"referenceName": "DelimitedText1",
+						"referenceName": "LandingZone",
 						"type": "DatasetReference"
 					},
 					"name": "sink8"
 				},
 				{
 					"dataset": {
-						"referenceName": "DelimitedText1",
+						"referenceName": "LandingZone",
 						"type": "DatasetReference"
 					},
 					"name": "sink9"
