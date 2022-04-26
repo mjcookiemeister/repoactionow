@@ -99,6 +99,11 @@
 									"storeSettings": {
 										"type": "AzureBlobFSReadSettings",
 										"recursive": true,
+										"wildcardFolderPath": "datalogic",
+										"wildcardFileName": {
+											"value": "@item().name",
+											"type": "Expression"
+										},
 										"enablePartitionDiscovery": false
 									},
 									"formatSettings": {
