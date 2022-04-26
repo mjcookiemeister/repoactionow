@@ -6,7 +6,7 @@
 		"pipelines": [
 			{
 				"pipelineReference": {
-					"referenceName": "AddFileName",
+					"referenceName": "DataLogic",
 					"type": "PipelineReference"
 				}
 			}
