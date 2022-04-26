@@ -73,7 +73,7 @@
 					},
 					"activities": [
 						{
-							"name": "Copy data1",
+							"name": "CopyExtraField",
 							"type": "Copy",
 							"dependsOn": [],
 							"policy": {
